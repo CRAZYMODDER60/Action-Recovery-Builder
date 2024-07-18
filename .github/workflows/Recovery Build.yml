@@ -1,32 +1,40 @@
-name: XRDP via Local Tunnel
+name: Remote Desktop Setup
 
 on:
   workflow_dispatch:
 
 jobs:
-  expose_rdp_tunnel:
+  setup:
     runs-on: ubuntu-latest
     steps:
-      - name: Install xrdp and dependencies
+      - name: Install xrdp
         run: |
           sudo apt-get update
-          sudo apt-get install -y xrdp
+          sudo apt-get install -y xrdp neofetch
+
+      - name: Start xrdp service
+        run: |
           sudo systemctl start xrdp
-          sudo systemctl enable xrdp
-      
+          sudo systemctl enable xrdp 
+          neofetch
       - name: Install localtunnel
-        run: npm install -g localtunnel
-      
+        run: |
+          npm install -g localtunnel
+
       - name: Start localtunnel for RDP
         id: localtunnel
         run: |
           lt --port 3389 > tunnel_info.txt &
-          sleep 10 # Allow time for localtunnel to start and provide URL
+          sleep 20  # Allow localtunnel to start
           cat tunnel_info.txt | grep -oP '(?<=url: ).*' > url.txt
 
-      - name: Display tunnel URL
+      - name: Display RDP access URL
         run: |
           echo "Connect using Remote Desktop Protocol (RDP) to $(cat url.txt)"
 
-      - name: Keep workflow running
-        run: sleep infinity
+      - name: Interactive Session
+        run: |
+          # Provide instructions or start an interactive shell
+          echo "You can now enter custom commands here. Press Ctrl+C to exit."
+          bash  # This opens an interactive shell, you can replace with your custom commands.
+
