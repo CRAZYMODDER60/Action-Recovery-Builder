@@ -1,37 +1,40 @@
-name: Setup XRDP for Remote Desktop
+name: XRDP Remote Desktop Setup
 
 on:
   workflow_dispatch:
 
 jobs:
-  setup-xrdp:
+  setup:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Install XRDP and XFCE4 Desktop
-      run: |
-        sudo apt update
-        sudo apt install -y xfce4 xrdp
-        sudo systemctl enable xrdp
-        sudo systemctl start xrdp
+      - name: Update Snap and Install ngrok
+        run: |
+          sudo snap refresh
+          sudo snap install ngrok
 
-    - name: Install ngrok
-      run: |
-        wget -q -O /tmp/ngrok.zip https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
-        sudo unzip -o /tmp/ngrok.zip -d /usr/local/bin/
-        sudo chmod +x /usr/local/bin/ngrok
+      - name: Install XRDP and XFCE Desktop Environment
+        run: |
+          sudo apt update
+          sudo apt install -y xrdp xfce4 xfce4-goodies
+          sudo systemctl enable xrdp
+          sudo systemctl start xrdp
+          echo xfce4-session > ~/.xsession
 
-    - name: Start ngrok Tunnel for XRDP
-      run: |
-        ngrok authtoken 2iaMnulzEavMCPvui19x7g9K4qt_7Z7EFBaXa4y4ttyCaUskG
-        ngrok tcp 3389 --region=in  # Adjust region as per your preference
+      - name: Allow RDP Port through Firewall
+        run: |
+          sudo ufw allow 3389/tcp
+          sudo ufw enable
 
-    - name: Display ngrok Tunnel URL
-      run: |
-        echo "Connect using Remote Desktop Protocol (RDP) to the following ngrok URL:"
-        ngrok_url=$(curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url')
-        echo "$ngrok_url"
+      - name: Authenticate ngrok
+        run: |
+          ngrok authtoken 2iaMnulzEavMCPvui19x7g9K4qt_7Z7EFBaXa4y4ttyCaUskG
 
-    - name: Keep Workflow Running
-      run: |
-        while true; do sleep 86400; done  # Keep the workflow running indefinitely
+      - name: Start ngrok Tunnel for RDP
+        run: |
+          ngrok tcp 3389 --region=in
+
+      - name: Display ngrok Tunnel Information
+        run: |
+          echo "Connect using Remote Desktop Protocol (RDP) to:"
+          ngrok http 3389
