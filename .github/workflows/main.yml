@@ -3,11 +3,11 @@ name: WiFi Cracking with Aircrack-ng
 on:
   workflow_dispatch:
     inputs:
-      fileio_link_dictionary:
-        description: 'Shareable link to the dictionary text file from file.io'
+      dictionary_url:
+        description: 'URL to the dictionary text file'
         required: true
-      fileio_link_pcap:
-        description: 'Shareable link to the pcap/cap file from file.io'
+      pcap_file_url:
+        description: 'URL to the pcap/cap file'
         required: true
 
 jobs:
@@ -16,29 +16,25 @@ jobs:
     steps:
       - name: Download Dictionary File
         run: |
-          fileio_link="${{ github.event.inputs.fileio_link_dictionary }}"
-          download_url=$(curl -s $fileio_link | jq -r '.link')
-          curl -L -o dictionary.txt "$download_url"
-        shell: bash
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          curl -sSL -o dictionary.txt ${{ github.event.inputs.dictionary_url }}
 
       - name: Download PCAP File
         run: |
-          fileio_link="${{ github.event.inputs.fileio_link_pcap }}"
-          download_url=$(curl -s $fileio_link | jq -r '.link')
-          curl -L -o wifi_capture.pcap "$download_url"
-        shell: bash
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Install Aircrack-ng
-        run: |
-          sudo apt update
-          sudo apt install -y aircrack-ng
-        shell: bash
+          curl -sSL -o wifi_capture.pcap ${{ github.event.inputs.pcap_file_url }}
 
-      - name: Run Aircrack-ng
+      - name: Install Aircrack-ng
+        run: sudo apt update && sudo apt install -y aircrack-ng
+
+      - name: Use Aircrack-ng to Crack WiFi Password
         run: |
           aircrack-ng -w dictionary.txt wifi_capture.pcap
-        shell: bash
+        working-directory: ${{ github.workspace }}
+
+      - name: Display Results
+        run: |
+          if [ -f "KEY_FOUND.txt" ]; then
+            echo "WiFi password cracked:"
+            cat KEY_FOUND.txt
+          else
+            echo "WiFi password not cracked."
+          fi
