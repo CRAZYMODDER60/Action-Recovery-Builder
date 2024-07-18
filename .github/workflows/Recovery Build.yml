@@ -1,26 +1,3 @@
-name: Setup XRDP for Remote Desktop
-
-on:
-  workflow_dispatch:
-
-jobs:
-  setup-xrdp:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Display IP Address
-      run: echo "Your server IP address is ${{ github.server_url }}"
-
-    - name: Install XRDP and XFCE4 Desktop
-      run: |
-        sudo apt update
-        sudo apt install -y xfce4 xrdp
-        sudo systemctl enable xrdp
-        sudo systemctl start xrdp
-
-    - name: Display XRDP Connection Details
-      run: echo "Connect using Remote Desktop Protocol (RDP) to ${{ github.server_url }}:3389"
-
-    - name: Keep Workflow Running
-      run: |
-        while true; do sleep 86400; done  # Keep the workflow running indefinitely
+0s
+Run echo "Connect using Remote Desktop Protocol (RDP) to https://github.com:3389"
+Connect using Remote Desktop Protocol (RDP) to https://github.com:3389
