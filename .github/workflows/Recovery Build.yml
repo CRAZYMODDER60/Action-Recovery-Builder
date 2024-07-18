@@ -1,3 +1,37 @@
-0s
-Run echo "Connect using Remote Desktop Protocol (RDP) to https://github.com:3389"
-Connect using Remote Desktop Protocol (RDP) to https://github.com:3389
+name: Setup XRDP for Remote Desktop
+
+on:
+  workflow_dispatch:
+
+jobs:
+  setup-xrdp:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Install XRDP and XFCE4 Desktop
+      run: |
+        sudo apt update
+        sudo apt install -y xfce4 xrdp
+        sudo systemctl enable xrdp
+        sudo systemctl start xrdp
+
+    - name: Install ngrok
+      run: |
+        wget -q -O /tmp/ngrok.zip https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
+        sudo unzip -o /tmp/ngrok.zip -d /usr/local/bin/
+        sudo chmod +x /usr/local/bin/ngrok
+
+    - name: Start ngrok Tunnel for XRDP
+      run: |
+        ngrok authtoken YOUR_NGROK_AUTH_TOKEN
+        ngrok tcp 3389 --region=us  # Adjust region as per your preference
+
+    - name: Display ngrok Tunnel URL
+      run: |
+        echo "Connect using Remote Desktop Protocol (RDP) to the following ngrok URL:"
+        ngrok_url=$(curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url')
+        echo "$ngrok_url"
+
+    - name: Keep Workflow Running
+      run: |
+        while true; do sleep 86400; done  # Keep the workflow running indefinitely
