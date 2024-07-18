@@ -1,0 +1,46 @@
+name: WiFi Cracking with Aircrack-ng
+
+on:
+  workflow_dispatch:
+    inputs:
+      dictionary_url:
+        description: 'URL to the dictionary text file'
+        required: true
+      pcap_file_url:
+        description: 'URL to the pcap/cap file'
+        required: true
+
+jobs:
+  crack_wifi:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Dictionary File
+        uses: actions/download-artifact@v2
+        with:
+          name: dictionary
+          path: dictionary.txt
+          url: ${{ github.event.inputs.dictionary_url }}
+
+      - name: Download PCAP File
+        uses: actions/download-artifact@v2
+        with:
+          name: pcap
+          path: wifi_capture.pcap
+          url: ${{ github.event.inputs.pcap_file_url }}
+
+      - name: Install Aircrack-ng
+        run: sudo apt update && sudo apt install -y aircrack-ng
+
+      - name: Use Aircrack-ng to Crack WiFi Password
+        run: |
+          aircrack-ng -w dictionary.txt wifi_capture.pcap
+        working-directory: ${{ github.workspace }}
+
+      - name: Display Results
+        run: |
+          if [ -f "KEY_FOUND.txt" ]; then
+            echo "WiFi password cracked:"
+            cat KEY_FOUND.txt
+          else
+            echo "WiFi password not cracked."
+          fi
