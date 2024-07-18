@@ -15,18 +15,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download Dictionary File
-        uses: actions/download-artifact@v2
-        with:
-          name: dictionary
-          path: dictionary.txt
-          url: ${{ github.event.inputs.dictionary_url }}
+        run: |
+          curl -sSL -o dictionary.txt ${{ github.event.inputs.dictionary_url }}
 
       - name: Download PCAP File
-        uses: actions/download-artifact@v2
-        with:
-          name: pcap
-          path: wifi_capture.pcap
-          url: ${{ github.event.inputs.pcap_file_url }}
+        run: |
+          curl -sSL -o wifi_capture.pcap ${{ github.event.inputs.pcap_file_url }}
 
       - name: Install Aircrack-ng
         run: sudo apt update && sudo apt install -y aircrack-ng
