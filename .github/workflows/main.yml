@@ -16,7 +16,6 @@ jobs:
     steps:
       - name: Download Dictionary File
         run: |
-            sudo apt install -y jq
           fileio_link="${{ github.event.inputs.fileio_link_dictionary }}"
           download_url=$(curl -s $fileio_link | jq -r '.link')
           curl -L -o dictionary.txt "$download_url"
