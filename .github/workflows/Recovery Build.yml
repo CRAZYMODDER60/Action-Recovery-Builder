@@ -30,7 +30,7 @@ jobs:
       - name: Start ngrok tunnel
         id: ngrok_tunnel
         run: |
-          ./ngrok tcp 22 --region=auto
+          ./ngrok tcp 22
 
       - name: Display ngrok tunnel details
         run: |
