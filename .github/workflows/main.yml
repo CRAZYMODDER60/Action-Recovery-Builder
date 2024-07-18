@@ -13,10 +13,7 @@ on:
 jobs:
   crack_wifi:
     runs-on: ubuntu-latest
-    steps: 
-      - name : Remove All
-        run: |
-          rm -rf *
+    steps:
       - name: Download Dictionary File
         run: |
           curl -sSL -o dictionary.txt ${{ github.event.inputs.dictionary_url }}
