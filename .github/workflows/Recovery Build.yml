@@ -1,4 +1,4 @@
-name: Remote Desktop Setup
+name: Remote Access Setup
 
 on:
   workflow_dispatch:
@@ -6,35 +6,37 @@ on:
 jobs:
   setup:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Install xrdp
+      - name: Install SSH server
         run: |
           sudo apt-get update
-          sudo apt-get install -y xrdp neofetch
+          sudo apt-get install -y openssh-server
 
-      - name: Start xrdp service
+      - name: Start SSH service
         run: |
-          sudo systemctl start xrdp
-          sudo systemctl enable xrdp 
-          neofetch
-      - name: Install localtunnel
-        run: |
-          npm install -g localtunnel
+          sudo systemctl start ssh
+          sudo systemctl enable ssh
 
-      - name: Start localtunnel for RDP
-        id: localtunnel
+      - name: Download ngrok
         run: |
-          lt --port 3389 > tunnel_info.txt &
-          sleep 20  # Allow localtunnel to start
-          cat tunnel_info.txt | grep -oP '(?<=url: ).*' > url.txt
+          wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
+          unzip ngrok-stable-linux-amd64.zip
 
-      - name: Display RDP access URL
+      - name: Connect ngrok to your account
         run: |
-          echo "Connect using Remote Desktop Protocol (RDP) to $(cat url.txt)"
+          ./ngrok authtoken 2iaMnulzEavMCPvui19x7g9K4qt_7Z7EFBaXa4y4ttyCaUskG  # Replace with your ngrok auth token
 
+      - name: Start ngrok tunnel
+        id: ngrok_tunnel
+        run: |
+          ./ngrok tcp 22 --region=auto
+
+      - name: Display ngrok tunnel details
+        run: |
+          echo "Connect via SSH to: $(curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url')"
+      
       - name: Interactive Session
         run: |
-          # Provide instructions or start an interactive shell
-          echo "You can now enter custom commands here. Press Ctrl+C to exit."
+          echo "You can now SSH into the machine using the displayed ngrok URL."
           bash  # This opens an interactive shell, you can replace with your custom commands.
-
