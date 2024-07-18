@@ -1,111 +1,26 @@
-name: OrangeFox Recovery Build
+name: Setup XRDP for Remote Desktop
 
 on:
   workflow_dispatch:
-    inputs:
-      MANIFEST_BRANCH:
-        type: choice
-        description: Manifest Branch
-        options:
-        - 11
-        - 10
-        required: true
-        default: 11
-      DEVICE_TREE_URL:
-        description: Device Tree URL
-        required: true
-        default: https://github.com/OrangeFoxRecovery/device_asus_I003D  # Example URL, replace with your device tree URL
-      DEVICE_TREE_BRANCH:
-        description: Device Tree Branch
-        required: true
-        default: fox_11.0
-      DEVICE_PATH:
-        description: Path the device tree should be synced to, relative to source root
-        required: true
-        default: device/asus/I003D  # Example path, adjust as per your device
-      DEVICE_NAME:
-        description: Device Name from tree (should match name on twrp_<DEVICE_NAME>.mk)
-        required: true
-        default: I003D  # Example device name, adjust as per your device
-      REPOPICK_PATCHES:
-        description: (Optional) Gerrit commit numbers separated by a space to be included in the build (leave blank if not using)
-        type: string
-        required: false
-      BUILD_TARGET:
-        type: choice
-        description: Partition containing recovery ramdisk
-        options:
-        - recovery
-        required: true
-        default: recovery
-      RECOVERY_INSTALLER:
-        description: Include recovery installer zip
-        type: boolean
-        required: true
-        default: false
 
 jobs:
-  build:
+  setup-xrdp:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Display Run Parameters
-      run: |
-        echo "::group::User Environment Variables"
-        echo "Manifest Branch: ${{ inputs.MANIFEST_BRANCH }}"
-        echo "Device Tree URL: ${{ inputs.DEVICE_TREE_URL }}"
-        echo "Device Tree Branch: ${{ inputs.DEVICE_TREE_BRANCH }}"
-        echo "Device Path: ${{ inputs.DEVICE_PATH }}"
-        echo "Device Name: ${{ inputs.DEVICE_NAME }}"
-        echo "Build Target: ${{ inputs.BUILD_TARGET }}.img"
-        echo "Include Recovery Installer: ${{ inputs.RECOVERY_INSTALLER }}"
-        echo "::endgroup::"
-      
-    - name: Checkout Repository
-      uses: actions/checkout@v2
-      
-    - name: Install Dependencies
+    - name: Display IP Address
+      run: echo "Your server IP address is ${{ github.server_url }}"
+
+    - name: Install XRDP and XFCE4 Desktop
       run: |
         sudo apt update
-        sudo apt install -y openjdk-8-jdk android-tools-adb bc bison build-essential curl flex g++-multilib gcc-multilib gnupg gperf imagemagick lib32ncurses5-dev lib32readline-dev lib32z1-dev liblz4-tool libncurses5-dev libsdl1.2-dev libssl-dev  libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc zip zlib1g-dev repo
-        sudo update-alternatives --config java
-        sudo apt-get install openjdk-8-jdk
+        sudo apt install -y xfce4 xrdp
+        sudo systemctl enable xrdp
+        sudo systemctl start xrdp
 
-    - name: Set Up Environment
-      run: |
-        sudo apt-get install git-core gnupg flex bison gperf build-essential \
-          zip curl zlib1g-dev gcc-multilib g++-multilib libc6-dev-i386 \
-          lib32ncurses5-dev x11proto-core-dev libx11-dev lib32z1-dev ccache \
-          libgl1-mesa-dev libxml2-utils xsltproc unzip fontconfig
+    - name: Display XRDP Connection Details
+      run: echo "Connect using Remote Desktop Protocol (RDP) to ${{ github.server_url }}:3389"
 
-    - name: Initialize Repo
+    - name: Keep Workflow Running
       run: |
-        mkdir ~/bin
-        curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
-        chmod a+x ~/bin/repo
-        export PATH=~/bin:$PATH
-      
-    - name: Sync Repo
-      run: |
-        repo init -u https://gitlab.com/OrangeFox/Manifest.git -b fox-${{ inputs.MANIFEST_BRANCH }}
-        repo sync --force-sync -j$(nproc --all)
-      
-    - name: Clone Device Tree
-      run: |
-        git clone --depth=1 --single-branch --branch ${{ inputs.DEVICE_TREE_BRANCH }} ${{ inputs.DEVICE_TREE_URL }} ${{ inputs.DEVICE_PATH }}
-
-    - name: Customize Build if Needed
-      run: |
-        # Add any specific customization steps here
-        
-    - name: Build OrangeFox Recovery
-      run: |
-        source build/envsetup.sh
-        lunch omni_${{ inputs.DEVICE_NAME }}-eng
-        mka recoveryimage
-        
-    - name: Upload Artifacts
-      uses: actions/upload-artifact@v2
-      with:
-        name: orangefox-recovery-${{ inputs.DEVICE_NAME }}-${{ github.run_id }}
-        path: out/target/product/${{ inputs.DEVICE_NAME }}/recovery.img
+        while true; do sleep 86400; done  # Keep the workflow running indefinitely
