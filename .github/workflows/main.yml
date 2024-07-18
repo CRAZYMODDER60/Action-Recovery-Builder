@@ -17,20 +17,28 @@ jobs:
       - name: Download Dictionary File
         run: |
           curl -sSL -o dictionary.txt ${{ github.event.inputs.dictionary_url }}
-
+          echo "Downloaded dictionary.txt:"
+          ls -l dictionary.txt
+          
       - name: Download PCAP File
         run: |
-          curl -sSL -o wifi_capture.pcap ${{ github.event.inputs.pcap_file_url }} 
-          ls
-
+          curl -sSL -o wifi_capture.pcap ${{ github.event.inputs.pcap_file_url }}
+          echo "Downloaded wifi_capture.pcap:"
+          ls -l wifi_capture.pcap
+          
       - name: Install Aircrack-ng
         run: sudo apt update && sudo apt install -y aircrack-ng
 
+      - name: Verify PCAP File
+        run: |
+          file wifi_capture.pcap
+          tcpdump -r wifi_capture.pcap -c 10
+          
       - name: Use Aircrack-ng to Crack WiFi Password
         run: |
           aircrack-ng -w dictionary.txt wifi_capture.pcap
         working-directory: ${{ github.workspace }}
-
+      
       - name: Display Results
         run: |
           if [ -f "KEY_FOUND.txt" ]; then
