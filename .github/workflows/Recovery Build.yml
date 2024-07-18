@@ -1,42 +1,29 @@
-name: Remote Access Setup
+name: Serveo SSH Tunnel
 
 on:
   workflow_dispatch:
 
 jobs:
-  setup:
+  serveo_ssh:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Install SSH server
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y openssh-server
+      - name: Install SSH Client
+        run: sudo apt update && sudo apt install -y openssh-client
 
-      - name: Start SSH service
-        run: |
-          sudo systemctl start ssh
-          sudo systemctl enable ssh
+      - name: Install jq (JSON Processor)
+        run: sudo apt install -y jq
 
-      - name: Download ngrok
+      - name: Start Serveo Tunnel
+        id: serveo
         run: |
-          wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
-          unzip ngrok-stable-linux-amd64.zip
+          ssh -o StrictHostKeyChecking=no -R 80:localhost:22 serveo.net > serveo_url.txt &
+          sleep 10  # Allow time for Serveo to start and provide the URL
+          cat serveo_url.txt | grep -oP '(?<=url: ).*' > serveo_url_final.txt
 
-      - name: Connect ngrok to your account
+      - name: Display Serveo URL
         run: |
-          ./ngrok authtoken 2iaMnulzEavMCPvui19x7g9K4qt_7Z7EFBaXa4y4ttyCaUskG  # Replace with your ngrok auth token
-
-      - name: Start ngrok tunnel
-        id: ngrok_tunnel
-        run: |
-          ./ngrok tcp 22
-
-      - name: Display ngrok tunnel details
-        run: |
-          echo "Connect via SSH to: $(curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url')"
-      
-      - name: Interactive Session
-        run: |
-          echo "You can now SSH into the machine using the displayed ngrok URL."
-          bash  # This opens an interactive shell, you can replace with your custom commands.
+          serveo_url=$(cat serveo_url_final.txt)
+          echo "Connect using SSH to: $serveo_url"
+          echo "::set-output name=url::$serveo_url"
+        env:
+          SERVEO_URL: ${{ steps.serveo.outputs.url }}
