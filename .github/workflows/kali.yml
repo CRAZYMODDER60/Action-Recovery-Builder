@@ -18,34 +18,30 @@ on:
 
 jobs:
   build_iso:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, kali-linux]  # Use a self-hosted runner with Kali Linux
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Set up Docker with Kali Linux Rolling
-        uses: docker/setup-buildx-action@v2
-
-      - name: Run Kali Linux Docker container
-        uses: docker://kalilinux/kali-rolling:latest
-        with:
-          entrypoint: /bin/bash
+      - name: Install Dependencies
         run: |
-          # Environment variables
+          sudo apt update
+          sudo apt install -y git debootstrap live-build
+
+      - name: Clone live-build-config repository
+        run: |
+          git clone https://gitlab.com/kalilinux/build-scripts/live-build-config.git
+          cd live-build-config
+
+      - name: Configure and Build ISO
+        run: |
+          cd live-build-config
+          
           ENVIRONMENT="${{ github.event.inputs.environment }}"
           ISO_TYPE="${{ github.event.inputs.iso_type }}"
           PRESET="${{ github.event.inputs.preset }}"
 
-          # Install necessary packages
-          apt update
-          apt install -y git debootstrap live-build
-
-          # Clone the live-build config repository
-          git clone https://gitlab.com/kalilinux/build-scripts/live-build-config.git
-          cd live-build-config
-
-          # Build the ISO
           case $ENVIRONMENT in
             gnome)
               lb config --distribution kali-rolling --desktop gnome
@@ -97,15 +93,10 @@ jobs:
               ;;
           esac
 
-          # Build the ISO
           lb build
 
-          # Optionally, move or handle the built ISO
           mkdir -p results
           mv images/*.iso results/
-        shell: bash
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload ISO artifact
         uses: actions/upload-artifact@v2
