@@ -20,7 +20,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y git live-build simple-cdd cdebootstrap curl debootstrap
-          wget https://kali.download/kali/pool/main/l/live-build/live-build_20230502+kali4_all.deb
+          wget https://kali.download/kali/pool/main/l/live-build/live-build_20230502+kali3_all.deb
           wget https://kali.download/kali/pool/main/k/kali-archive-keyring/kali-archive-keyring_2024.1_all.deb
           sudo dpkg -i kali-archive-keyring*.deb
           sudo dpkg -i live-build_20230502*.deb || sudo apt -f install -y
@@ -28,9 +28,14 @@ jobs:
 
       - name: Download and Setup Kali Live Build Config
         run: |
-          # Download the Kali Linux live build configuration repository
           git clone https://gitlab.com/kalilinux/build-scripts/live-build-config.git
           cd live-build-config
+        shell: bash
+
+      - name: Clean Previous Builds
+        run: |
+          cd live-build-config
+          sudo lb clean
         shell: bash
 
       - name: Configure ISO Build
@@ -43,41 +48,57 @@ jobs:
           # Configure build settings
           case $ENVIRONMENT in
             gnome)
-              ./build.sh --variant gnome --verbose --arch amd64 
+               ./build.sh --variant gnome --verbose --arch amd64 
               ;;
             lxde)
               ./build.sh --variant lxde --verbose --arch amd64 
               ;;
             xfce)
-              ./build.sh --variant xfce --verbose --arch amd64 
+             ./build.sh --variant xfce --verbose --arch amd64 
               ;;
             kde)
-              ./build.sh --variant kde --verbose --arch amd64 
+              lb config --distribution kali-rolling --desktop kde
               ;;
             cli)
-              ./build.sh --variant cli --verbose --arch amd64 
+              lb config --distribution kali-rolling --desktop cli
               ;;
             *)
               echo "Unknown environment: $ENVIRONMENT"
               exit 1
               ;;
-          esac
+          esac 
         shell: bash
 
       - name: Build the ISO
         run: |
           cd live-build-config
-          lb build
+          lb build 2>&1 | tee build.log
+        shell: bash
+
+      - name: Check Build Status and Upload Log if Failed
+        if: failure()
+        run: |
+          mkdir -p results
+          mv live-build-config/build.log results/
         shell: bash
 
       - name: Archive the ISO
+        if: success()
         run: |
           mkdir -p results
-          mv images/*.iso results/
+          mv live-build-config/images/*.iso results/
         shell: bash
 
       - name: Upload ISO Artifact
+        if: success()
         uses: actions/upload-artifact@v3
         with:
           name: custom-kali-linux-iso
           path: results/*.iso
+
+      - name: Upload Build Log Artifact
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-log
+          path: results/build.log
