@@ -18,30 +18,38 @@ on:
 
 jobs:
   build_iso:
-    runs-on: [self-hosted, kali-linux]  # Use a self-hosted runner with Kali Linux
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Install Dependencies
+      - name: Setup Environment
         run: |
           sudo apt update
-          sudo apt install -y git debootstrap live-build
+          sudo apt install -y git debootstrap live-build jq wget
+        shell: bash
 
-      - name: Clone live-build-config repository
+      - name: Download and Setup Kali Live Build Config
         run: |
+          # Download the Kali Linux live build configuration repository
           git clone https://gitlab.com/kalilinux/build-scripts/live-build-config.git
           cd live-build-config
+          
+          # Setup live-build
+          sudo apt install -y live-build
+        shell: bash
 
-      - name: Configure and Build ISO
+      - name: Configure ISO Build
         run: |
           cd live-build-config
-          
+
+          # Set environment variables
           ENVIRONMENT="${{ github.event.inputs.environment }}"
           ISO_TYPE="${{ github.event.inputs.iso_type }}"
           PRESET="${{ github.event.inputs.preset }}"
 
+          # Configure build settings
           case $ENVIRONMENT in
             gnome)
               lb config --distribution kali-rolling --desktop gnome
@@ -92,14 +100,22 @@ jobs:
               exit 1
               ;;
           esac
+        shell: bash
 
+      - name: Build the ISO
+        run: |
+          cd live-build-config
           lb build
+        shell: bash
 
+      - name: Archive the ISO
+        run: |
           mkdir -p results
           mv images/*.iso results/
+        shell: bash
 
-      - name: Upload ISO artifact
-        uses: actions/upload-artifact@v2
+      - name: Upload ISO Artifact
+        uses: actions/upload-artifact@v3
         with:
           name: custom-kali-linux-iso
           path: results/*.iso
