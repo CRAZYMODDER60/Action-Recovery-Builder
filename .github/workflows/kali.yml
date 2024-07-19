@@ -7,7 +7,6 @@ on:
         description: 'Desktop environment to include (gnome, lxde, xfce, kde, cli)'
         required: true
         default: 'gnome'
-   
 
 jobs:
   build_iso:
@@ -20,11 +19,11 @@ jobs:
       - name: Setup Environment
         run: |
           sudo apt update
-          sudo apt install -y git live-build simple-cdd cdebootstrap curl
+          sudo apt install -y git live-build simple-cdd cdebootstrap curl debootstrap
           wget https://kali.download/kali/pool/main/l/live-build/live-build_20230502+kali3_all.deb
           wget https://kali.download/kali/pool/main/k/kali-archive-keyring/kali-archive-keyring_2024.1_all.deb
           sudo dpkg -i kali-archive-keyring*.deb
-          sudo dpkg -i live-build_20230502*.deb
+          sudo dpkg -i live-build_20230502*.deb || sudo apt -f install -y
         shell: bash
 
       - name: Download and Setup Kali Live Build Config
@@ -32,9 +31,6 @@ jobs:
           # Download the Kali Linux live build configuration repository
           git clone https://gitlab.com/kalilinux/build-scripts/live-build-config.git
           cd live-build-config
-          
-          # Setup live-build
-          sudo apt install -y live-build
         shell: bash
 
       - name: Configure ISO Build
@@ -43,32 +39,29 @@ jobs:
 
           # Set environment variables
           ENVIRONMENT="${{ github.event.inputs.environment }}"
-          ISO_TYPE="${{ github.event.inputs.iso_type }}"
-          PRESET="${{ github.event.inputs.preset }}"
 
           # Configure build settings
           case $ENVIRONMENT in
             gnome)
-               ./build.sh --variant gnome --verbose --arch amd64 
+              ./build.sh --variant gnome --verbose --arch amd64 
               ;;
             lxde)
               ./build.sh --variant lxde --verbose --arch amd64 
               ;;
             xfce)
-             ./build.sh --variant xfce --verbose --arch amd64 
+              ./build.sh --variant xfce --verbose --arch amd64 
               ;;
             kde)
-              lb config --distribution kali-rolling --desktop kde
+              ./build.sh --variant kde --verbose --arch amd64 
               ;;
             cli)
-              lb config --distribution kali-rolling --desktop cli
+              ./build.sh --variant cli --verbose --arch amd64 
               ;;
             *)
               echo "Unknown environment: $ENVIRONMENT"
               exit 1
               ;;
-          esac 
- 
+          esac
         shell: bash
 
       - name: Build the ISO
