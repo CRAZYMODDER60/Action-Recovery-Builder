@@ -56,13 +56,13 @@ jobs:
           # Configure build settings
           case $ENVIRONMENT in
             gnome)
-              lb config --distribution kali-rolling --desktop gnome
+               ./build.sh --variant gnome --verbose --arch amd64 
               ;;
             lxde)
-              lb config --distribution kali-rolling --desktop lxde
+              ./build.sh --variant lxde --verbose --arch amd64 
               ;;
             xfce)
-              lb config --distribution kali-rolling --desktop xfce
+             ./build.sh --variant xfce --verbose --arch amd64 
               ;;
             kde)
               lb config --distribution kali-rolling --desktop kde
@@ -74,36 +74,8 @@ jobs:
               echo "Unknown environment: $ENVIRONMENT"
               exit 1
               ;;
-          esac
-
-          case $ISO_TYPE in
-            live)
-              lb config --mode live
-              ;;
-            installer)
-              lb config --mode installer
-              ;;
-            *)
-              echo "Unknown ISO type: $ISO_TYPE"
-              exit 1
-              ;;
-          esac
-
-          case $PRESET in
-            light)
-              lb config --variant light
-              ;;
-            medium)
-              lb config --variant medium
-              ;;
-            high)
-              lb config --variant high
-              ;;
-            *)
-              echo "Unknown preset: $PRESET"
-              exit 1
-              ;;
-          esac
+          esac 
+ 
         shell: bash
 
       - name: Build the ISO
