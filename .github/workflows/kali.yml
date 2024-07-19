@@ -20,7 +20,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y git live-build simple-cdd cdebootstrap curl debootstrap
-          wget https://kali.download/kali/pool/main/l/live-build/live-build_20230502+kali3_all.deb
+          wget https://kali.download/kali/pool/main/l/live-build/live-build_20230502+kali4_all.deb
           wget https://kali.download/kali/pool/main/k/kali-archive-keyring/kali-archive-keyring_2024.1_all.deb
           sudo dpkg -i kali-archive-keyring*.deb
           sudo dpkg -i live-build_20230502*.deb || sudo apt -f install -y
