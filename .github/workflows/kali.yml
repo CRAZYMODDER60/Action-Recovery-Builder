@@ -7,14 +7,7 @@ on:
         description: 'Desktop environment to include (gnome, lxde, xfce, kde, cli)'
         required: true
         default: 'gnome'
-      iso_type:
-        description: 'Type of ISO to build (live, installer)'
-        required: true
-        default: 'live'
-      preset:
-        description: 'Preset for ISO build (light, medium, high)'
-        required: true
-        default: 'medium'
+   
 
 jobs:
   build_iso:
