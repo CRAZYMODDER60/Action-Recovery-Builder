@@ -1,0 +1,114 @@
+name: Build Custom Kali Linux ISO
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Desktop environment to include (gnome, lxde, xfce, kde, cli)'
+        required: true
+        default: 'gnome'
+      iso_type:
+        description: 'Type of ISO to build (live, installer)'
+        required: true
+        default: 'live'
+      preset:
+        description: 'Preset for ISO build (light, medium, high)'
+        required: true
+        default: 'medium'
+
+jobs:
+  build_iso:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Docker with Kali Linux Rolling
+        uses: docker/setup-buildx-action@v2
+
+      - name: Run Kali Linux Docker container
+        uses: docker://kalilinux/kali-rolling:latest
+        with:
+          entrypoint: /bin/bash
+        run: |
+          # Environment variables
+          ENVIRONMENT="${{ github.event.inputs.environment }}"
+          ISO_TYPE="${{ github.event.inputs.iso_type }}"
+          PRESET="${{ github.event.inputs.preset }}"
+
+          # Install necessary packages
+          apt update
+          apt install -y git debootstrap live-build
+
+          # Clone the live-build config repository
+          git clone https://gitlab.com/kalilinux/build-scripts/live-build-config.git
+          cd live-build-config
+
+          # Build the ISO
+          case $ENVIRONMENT in
+            gnome)
+              lb config --distribution kali-rolling --desktop gnome
+              ;;
+            lxde)
+              lb config --distribution kali-rolling --desktop lxde
+              ;;
+            xfce)
+              lb config --distribution kali-rolling --desktop xfce
+              ;;
+            kde)
+              lb config --distribution kali-rolling --desktop kde
+              ;;
+            cli)
+              lb config --distribution kali-rolling --desktop cli
+              ;;
+            *)
+              echo "Unknown environment: $ENVIRONMENT"
+              exit 1
+              ;;
+          esac
+
+          case $ISO_TYPE in
+            live)
+              lb config --mode live
+              ;;
+            installer)
+              lb config --mode installer
+              ;;
+            *)
+              echo "Unknown ISO type: $ISO_TYPE"
+              exit 1
+              ;;
+          esac
+
+          case $PRESET in
+            light)
+              lb config --variant light
+              ;;
+            medium)
+              lb config --variant medium
+              ;;
+            high)
+              lb config --variant high
+              ;;
+            *)
+              echo "Unknown preset: $PRESET"
+              exit 1
+              ;;
+          esac
+
+          # Build the ISO
+          lb build
+
+          # Optionally, move or handle the built ISO
+          mkdir -p results
+          mv images/*.iso results/
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload ISO artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: custom-kali-linux-iso
+          path: results/*.iso
