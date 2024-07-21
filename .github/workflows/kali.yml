@@ -70,7 +70,7 @@ jobs:
               lb config --distribution kali-rolling --desktop kde
               ;;
             cli)
-               ./build.sh --variant minimal --verbose --arch amd64
+               ./build.sh --variant netinst --verbose --arch amd64
               ;;
             *)
               echo "Unknown environment: $ENVIRONMENT"
