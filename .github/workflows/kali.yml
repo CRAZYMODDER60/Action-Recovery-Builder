@@ -39,14 +39,7 @@ jobs:
           echo "kali-desktop-live" >> kali-config/variant-minimal/.empty
         shell: bash
 
-      - name: Clean Previous Builds
-        run: |
-
-          sudo lb clean
-          sudo rm -rf /var/cache/live/build/*
-          sudo rm -rf /var/lib/live/build/*
-          sudo rm -rf /var/tmp/*
-        shell: bash
+   
 
       - name: Configure ISO Build
         run: |
