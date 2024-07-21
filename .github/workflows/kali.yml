@@ -19,7 +19,7 @@ jobs:
       - name: Setup Environment
         run: |
           sudo apt update
-          sudo apt install -y git live-build simple-cdd cdebootstrap curl debootstrap neofetch
+          sudo apt install -y git live-build simple-cdd cdebootstrap curl debootstrap
           wget https://kali.download/kali/pool/main/l/live-build/live-build_20230502+kali4_all.deb
           wget https://kali.download/kali/pool/main/k/kali-archive-keyring/kali-archive-keyring_2024.1_all.deb
           sudo dpkg -i kali-archive-keyring*.deb
@@ -30,20 +30,27 @@ jobs:
         run: |
           git clone https://gitlab.com/kalilinux/build-scripts/live-build-config.git
           cd live-build-config
-          neofetch
+
           # Create the .empty file with specified contents
-        
+    
           echo "kali-linux-core" > kali-config/variant-minimal/.empty
           echo "kali-linux-firmware" >> kali-config/variant-minimal/.empty
           echo "kali-system-cli" >> kali-config/variant-minimal/.empty
           echo "kali-desktop-live" >> kali-config/variant-minimal/.empty
         shell: bash
 
-   
+      - name: Clean Previous Builds
+        run: |
+          cd live-build-config
+          sudo lb clean
+          sudo rm -rf /var/cache/live/build/*
+          sudo rm -rf /var/lib/live/build/*
+          sudo rm -rf /var/tmp/*
+        shell: bash
 
       - name: Configure ISO Build
         run: |
-
+          cd live-build-config
 
           # Set environment variables
           ENVIRONMENT="${{ github.event.inputs.environment }}"
