@@ -30,11 +30,18 @@ jobs:
         run: |
           git clone https://gitlab.com/kalilinux/build-scripts/live-build-config.git
           cd live-build-config
+
+          # Create the .empty file with specified contents
+     
+          echo "kali-linux-core" > kali-config/variant-minimal/.empty
+          echo "kali-linux-firmware" >> kali-config/variant-minimal/.empty
+          echo "kali-system-cli" >> kali-config/variant-minimal/.empty
+          echo "kali-desktop-live" >> kali-config/variant-minimal/.empty
         shell: bash
 
       - name: Clean Previous Builds
         run: |
-          cd live-build-config
+        
           sudo lb clean
           sudo rm -rf /var/cache/live/build/*
           sudo rm -rf /var/lib/live/build/*
@@ -51,25 +58,25 @@ jobs:
           # Configure build settings
           case $ENVIRONMENT in
             gnome)
-               ./build.sh --variant gnome --verbose --arch amd64 
+              ./build.sh --variant gnome --verbose --arch amd64
               ;;
             lxde)
-              ./build.sh --variant lxde --verbose --arch amd64 
+              ./build.sh --variant lxde --verbose --arch amd64
               ;;
             xfce)
-             ./build.sh --variant xfce --verbose --arch amd64 
+              ./build.sh --variant xfce --verbose --arch amd64
               ;;
             kde)
               lb config --distribution kali-rolling --desktop kde
               ;;
             cli)
-              lb config --distribution kali-rolling --desktop cli
+                  ./build.sh --variant minimal --verbose --arch amd64
               ;;
             *)
               echo "Unknown environment: $ENVIRONMENT"
               exit 1
               ;;
-          esac 
+          esac
         shell: bash
 
       - name: Build the ISO
