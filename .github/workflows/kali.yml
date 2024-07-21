@@ -10,7 +10,7 @@ on:
 
 jobs:
   build_iso:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout repository
@@ -19,7 +19,7 @@ jobs:
       - name: Setup Environment
         run: |
           sudo apt update
-          sudo apt install -y git live-build simple-cdd cdebootstrap curl debootstrap
+          sudo apt install -y git live-build simple-cdd cdebootstrap curl debootstrap neofetch
           wget https://kali.download/kali/pool/main/l/live-build/live-build_20230502+kali4_all.deb
           wget https://kali.download/kali/pool/main/k/kali-archive-keyring/kali-archive-keyring_2024.1_all.deb
           sudo dpkg -i kali-archive-keyring*.deb
@@ -30,9 +30,9 @@ jobs:
         run: |
           git clone https://gitlab.com/kalilinux/build-scripts/live-build-config.git
           cd live-build-config
-
+          neofetch
           # Create the .empty file with specified contents
-     
+        
           echo "kali-linux-core" > kali-config/variant-minimal/.empty
           echo "kali-linux-firmware" >> kali-config/variant-minimal/.empty
           echo "kali-system-cli" >> kali-config/variant-minimal/.empty
@@ -41,7 +41,7 @@ jobs:
 
       - name: Clean Previous Builds
         run: |
-        
+
           sudo lb clean
           sudo rm -rf /var/cache/live/build/*
           sudo rm -rf /var/lib/live/build/*
@@ -50,7 +50,7 @@ jobs:
 
       - name: Configure ISO Build
         run: |
-          cd live-build-config
+
 
           # Set environment variables
           ENVIRONMENT="${{ github.event.inputs.environment }}"
@@ -70,7 +70,7 @@ jobs:
               lb config --distribution kali-rolling --desktop kde
               ;;
             cli)
-                  ./build.sh --variant minimal --verbose --arch amd64
+               ./build.sh --variant minimal --verbose --arch amd64
               ;;
             *)
               echo "Unknown environment: $ENVIRONMENT"
