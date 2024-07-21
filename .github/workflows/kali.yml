@@ -16,87 +16,86 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Setup Environment
+      - name: Set up Kali Linux Docker Container
         run: |
           sudo apt update
-          sudo apt install -y git live-build simple-cdd cdebootstrap curl debootstrap
-          wget https://kali.download/kali/pool/main/l/live-build/live-build_20230502+kali4_all.deb
-          wget https://kali.download/kali/pool/main/k/kali-archive-keyring/kali-archive-keyring_2024.1_all.deb
-          sudo dpkg -i kali-archive-keyring*.deb
-          sudo dpkg -i live-build_20230502*.deb || sudo apt -f install -y
+          sudo apt install -y docker.io
+          sudo docker pull kalilinux/kali-rolling
+        shell: bash
+
+      - name: Run Kali Linux Commands in Docker
+        run: |
+          sudo docker run --name kali_build -v $PWD:/build -w /build -d kalilinux/kali-rolling tail -f /dev/null
+          sudo docker exec kali_build apt update
+          sudo docker exec kali_build apt install -y git live-build simple-cdd cdebootstrap curl debootstrap
+          sudo docker exec kali_build wget https://kali.download/kali/pool/main/l/live-build/live-build_20230502+kali4_all.deb
+          sudo docker exec kali_build wget https://kali.download/kali/pool/main/k/kali-archive-keyring/kali-archive-keyring_2024.1_all.deb
+          sudo docker exec kali_build dpkg -i kali-archive-keyring*.deb
+          sudo docker exec kali_build dpkg -i live-build_20230502*.deb || sudo apt -f install -y
         shell: bash
 
       - name: Download and Setup Kali Live Build Config
         run: |
-          git clone https://gitlab.com/kalilinux/build-scripts/live-build-config.git
-          cd live-build-config
-
-          # Create the .empty file with specified contents
-    
-          echo "kali-linux-core" > kali-config/variant-minimal/.empty
-          echo "kali-linux-firmware" >> kali-config/variant-minimal/.empty
-          echo "kali-system-cli" >> kali-config/variant-minimal/.empty
-          echo "kali-desktop-live" >> kali-config/variant-minimal/.empty
+          sudo docker exec kali_build git clone https://gitlab.com/kalilinux/build-scripts/live-build-config.git
+          sudo docker exec kali_build bash -c "cd live-build-config && mkdir -p kali-config/variant-minimal"
+          sudo docker exec kali_build bash -c "echo 'kali-linux-core' > live-build-config/kali-config/variant-minimal/.empty"
+          sudo docker exec kali_build bash -c "echo 'kali-linux-firmware' >> live-build-config/kali-config/variant-minimal/.empty"
+          sudo docker exec kali_build bash -c "echo 'kali-system-cli' >> live-build-config/kali-config/variant-minimal/.empty"
+          sudo docker exec kali_build bash -c "echo 'kali-desktop-live' >> live-build-config/kali-config/variant-minimal/.empty"
         shell: bash
 
       - name: Clean Previous Builds
         run: |
-          cd live-build-config
-          sudo lb clean
-          sudo rm -rf /var/cache/live/build/*
-          sudo rm -rf /var/lib/live/build/*
-          sudo rm -rf /var/tmp/*
+          sudo docker exec kali_build bash -c "cd live-build-config && sudo lb clean"
+          sudo docker exec kali_build rm -rf /var/cache/live/build/*
+          sudo docker exec kali_build rm -rf /var/lib/live/build/*
+          sudo docker exec kali_build rm -rf /var/tmp/*
         shell: bash
 
       - name: Configure ISO Build
         run: |
-          cd live-build-config
-
-          # Set environment variables
-          ENVIRONMENT="${{ github.event.inputs.environment }}"
-
-          # Configure build settings
-          case $ENVIRONMENT in
-            gnome)
-              ./build.sh --variant gnome --verbose --arch amd64
-              ;;
-            lxde)
-              ./build.sh --variant lxde --verbose --arch amd64
-              ;;
-            xfce)
-              ./build.sh --variant xfce --verbose --arch amd64
-              ;;
-            kde)
-              lb config --distribution kali-rolling --desktop kde
-              ;;
-            cli)
-               ./build.sh --variant netinst --verbose --arch amd64
-              ;;
-            *)
-              echo "Unknown environment: $ENVIRONMENT"
-              exit 1
-              ;;
-          esac
+          sudo docker exec kali_build bash -c "cd live-build-config"
+          sudo docker exec kali_build bash -c "ENVIRONMENT=${{ github.event.inputs.environment }}"
+          sudo docker exec kali_build bash -c "
+            case $ENVIRONMENT in
+              gnome)
+                ./build.sh --variant gnome --verbose --arch amd64
+                ;;
+              lxde)
+                ./build.sh --variant lxde --verbose --arch amd64
+                ;;
+              xfce)
+                ./build.sh --variant xfce --verbose --arch amd64
+                ;;
+              kde)
+                lb config --distribution kali-rolling --desktop kde
+                ;;
+              cli)
+                ./build.sh --variant minimal --verbose --arch amd64
+                ;;
+              *)
+                echo 'Unknown environment: $ENVIRONMENT'
+                exit 1
+                ;;
+            esac
+          "
         shell: bash
 
       - name: Build the ISO
         run: |
-          cd live-build-config
-          lb build 2>&1 | tee build.log
+          sudo docker exec kali_build bash -c "cd live-build-config && lb build 2>&1 | tee build.log"
         shell: bash
 
       - name: Check Build Status and Upload Log if Failed
         if: failure()
         run: |
-          mkdir -p results
-          mv live-build-config/build.log results/
+          sudo docker exec kali_build bash -c "mkdir -p /build/results && mv live-build-config/build.log /build/results/"
         shell: bash
 
       - name: Archive the ISO
         if: success()
         run: |
-          mkdir -p results
-          mv live-build-config/images/*.iso results/
+          sudo docker exec kali_build bash -c "mkdir -p /build/results && mv live-build-config/images/*.iso /build/results/"
         shell: bash
 
       - name: Upload ISO Artifact
