@@ -1,0 +1,69 @@
+name: Video Processing Workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      video_url:
+        description: 'URL to the video file'
+        required: true
+
+jobs:
+  process_video:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y ffmpeg curl
+
+      - name: Download Video File
+        run: |
+          curl -sSL -o video.mp4 ${{ github.event.inputs.video_url }}
+
+      - name: Split Video into 4 Parts
+        run: |
+          ffmpeg -i video.mp4 -f segment -segment_time $(ffmpeg -i video.mp4 2>&1 | grep Duration | awk '{print $2}' | sed 's/..$//;s/:/-/g' | awk -F- '{print ($1*3600 + $2*60 + $3) / 4}') -c copy part%03d.mp4
+
+      - name: Process Part 1
+        run: |
+          ffmpeg -i part000.mp4 -vf "minterpolate='fps=60:mi_mode=mci:mc_mode=aobmc:vsbmc=1'" -c:v libx265 -preset slow -x265-params crf=18 -c:a copy processed_part000.mp4
+        working-directory: ${{ github.workspace }}
+
+      - name: Upload Processed Part 1
+        uses: actions/upload-artifact@v3
+        with:
+          name: processed_part000
+          path: processed_part000.mp4
+
+      - name: Process Part 2
+        run: |
+          ffmpeg -i part001.mp4 -vf "minterpolate='fps=60:mi_mode=mci:mc_mode=aobmc:vsbmc=1'" -c:v libx265 -preset slow -x265-params crf=18 -c:a copy processed_part001.mp4
+        working-directory: ${{ github.workspace }}
+
+      - name: Upload Processed Part 2
+        uses: actions/upload-artifact@v3
+        with:
+          name: processed_part001
+          path: processed_part001.mp4
+
+      - name: Process Part 3
+        run: |
+          ffmpeg -i part002.mp4 -vf "minterpolate='fps=60:mi_mode=mci:mc_mode=aobmc:vsbmc=1'" -c:v libx265 -preset slow -x265-params crf=18 -c:a copy processed_part002.mp4
+        working-directory: ${{ github.workspace }}
+
+      - name: Upload Processed Part 3
+        uses: actions/upload-artifact@v3
+        with:
+          name: processed_part002
+          path: processed_part002.mp4
+
+      - name: Process Part 4
+        run: |
+          ffmpeg -i part003.mp4 -vf "minterpolate='fps=60:mi_mode=mci:mc_mode=aobmc:vsbmc=1'" -c:v libx265 -preset slow -x265-params crf=18 -c:a copy processed_part003.mp4
+        working-directory: ${{ github.workspace }}
+
+      - name: Upload Processed Part 4
+        uses: actions/upload-artifact@v3
+        with:
+          name: processed_part003
+          path: processed_part003.mp4
