@@ -19,11 +19,13 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install -y debootstrap schroot curl git
+          sudo apt install -y debootstrap schroot curl git neofetch 
         shell: bash
 
       - name: Debootstrap Kali
         run: |
+          sudo rm -rf *
+          neofetch
           sudo debootstrap --arch=amd64 kali-rolling /srv/chroot/kali http://http.kali.org/kali
           sudo mount --bind /dev /srv/chroot/kali/dev
           sudo mount --bind /sys /srv/chroot/kali/sys
