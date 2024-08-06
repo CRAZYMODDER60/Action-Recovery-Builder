@@ -10,53 +10,71 @@ on:
 
 jobs:
   build_iso:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Set up Kali Linux Docker Container
+      - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install -y docker.io
-          sudo docker pull kalilinux/kali-rolling
+          sudo apt install -y debootstrap schroot curl git
         shell: bash
 
-      - name: Run Kali Linux Commands in Docker
+      - name: Debootstrap Kali
         run: |
-          sudo docker run --name kali_build -v $PWD:/build -w /build -d kalilinux/kali-rolling tail -f /dev/null
-          sudo docker exec kali_build apt update
-          sudo docker exec kali_build apt install -y git live-build simple-cdd cdebootstrap curl debootstrap
-          sudo docker exec kali_build wget https://kali.download/kali/pool/main/l/live-build/live-build_20230502+kali4_all.deb
-          sudo docker exec kali_build wget https://kali.download/kali/pool/main/k/kali-archive-keyring/kali-archive-keyring_2024.1_all.deb
-          sudo docker exec kali_build dpkg -i kali-archive-keyring*.deb
-          sudo docker exec kali_build dpkg -i live-build_20230502*.deb || sudo apt -f install -y
+          sudo debootstrap --arch=amd64 kali-rolling /srv/chroot/kali http://http.kali.org/kali
+          sudo mount --bind /dev /srv/chroot/kali/dev
+          sudo mount --bind /sys /srv/chroot/kali/sys
+          sudo mount --bind /proc /srv/chroot/kali/proc
         shell: bash
 
-      - name: Download and Setup Kali Live Build Config
+      - name: Install necessary packages in chroot
         run: |
-          sudo docker exec kali_build git clone https://gitlab.com/kalilinux/build-scripts/live-build-config.git
-          sudo docker exec kali_build bash -c "cd live-build-config && mkdir -p kali-config/variant-minimal"
-          sudo docker exec kali_build bash -c "echo 'kali-linux-core' > live-build-config/kali-config/variant-minimal/.empty"
-          sudo docker exec kali_build bash -c "echo 'kali-linux-firmware' >> live-build-config/kali-config/variant-minimal/.empty"
-          sudo docker exec kali_build bash -c "echo 'kali-system-cli' >> live-build-config/kali-config/variant-minimal/.empty"
-          sudo docker exec kali_build bash -c "echo 'kali-desktop-live' >> live-build-config/kali-config/variant-minimal/.empty"
+          sudo chroot /srv/chroot/kali /bin/bash -c "
+            apt update
+            apt install -y git live-build simple-cdd cdebootstrap curl wget
+            wget https://kali.download/kali/pool/main/l/live-build/live-build_20230502+kali4_all.deb
+            wget https://kali.download/kali/pool/main/k/kali-archive-keyring/kali-archive-keyring_2024.1_all.deb
+            dpkg -i kali-archive-keyring*.deb
+            dpkg -i live-build_20230502*.deb || apt -f install -y
+          "
+        shell: bash
+
+      - name: Setup Kali Live Build Config
+        run: |
+          sudo chroot /srv/chroot/kali /bin/bash -c "
+            git clone https://gitlab.com/kalilinux/build-scripts/live-build-config.git
+            cd live-build-config
+            mkdir -p kali-config/variant-minimal
+            echo 'kali-linux-core' > kali-config/variant-minimal/.empty
+            echo 'kali-linux-firmware' >> kali-config/variant-minimal/.empty
+            echo 'kali-system-cli' >> kali-config/variant-minimal/.empty
+            echo 'kali-desktop-live' >> kali-config/variant-minimal/.empty
+            echo 'vlc' >> kali-config/variant-minimal/.empty
+            echo 'curl' >> kali-config/variant-minimal/.empty
+            echo 'wget' >> kali-config/variant-minimal/.empty
+            echo 'celluloid' >> kali-config/variant-minimal/.empty
+          "
         shell: bash
 
       - name: Clean Previous Builds
         run: |
-          sudo docker exec kali_build bash -c "cd live-build-config && sudo lb clean"
-          sudo docker exec kali_build rm -rf /var/cache/live/build/*
-          sudo docker exec kali_build rm -rf /var/lib/live/build/*
-          sudo docker exec kali_build rm -rf /var/tmp/*
+          sudo chroot /srv/chroot/kali /bin/bash -c "
+            cd live-build-config
+            lb clean
+            rm -rf /var/cache/live/build/*
+            rm -rf /var/lib/live/build/*
+            rm -rf /var/tmp/*
+          "
         shell: bash
 
       - name: Configure ISO Build
         run: |
-          sudo docker exec kali_build bash -c "cd live-build-config"
-          sudo docker exec kali_build bash -c "ENVIRONMENT=${{ github.event.inputs.environment }}"
-          sudo docker exec kali_build bash -c "
+          sudo chroot /srv/chroot/kali /bin/bash -c "
+            cd live-build-config
+            ENVIRONMENT=${{ github.event.inputs.environment }}
             case $ENVIRONMENT in
               gnome)
                 ./build.sh --variant gnome --verbose --arch amd64
@@ -83,19 +101,24 @@ jobs:
 
       - name: Build the ISO
         run: |
-          sudo docker exec kali_build bash -c "cd live-build-config && lb build 2>&1 | tee build.log"
+          sudo chroot /srv/chroot/kali /bin/bash -c "
+            cd live-build-config
+            lb build 2>&1 | tee build.log
+          "
         shell: bash
 
       - name: Check Build Status and Upload Log if Failed
         if: failure()
         run: |
-          sudo docker exec kali_build bash -c "mkdir -p /build/results && mv live-build-config/build.log /build/results/"
+          sudo mkdir -p /srv/chroot/kali/build/results
+          sudo mv /srv/chroot/kali/live-build-config/build.log /srv/chroot/kali/build/results/
         shell: bash
 
       - name: Archive the ISO
         if: success()
         run: |
-          sudo docker exec kali_build bash -c "mkdir -p /build/results && mv live-build-config/images/*.iso /build/results/"
+          sudo mkdir -p /srv/chroot/kali/build/results
+          sudo mv /srv/chroot/kali/live-build-config/images/*.iso /srv/chroot/kali/build/results/
         shell: bash
 
       - name: Upload ISO Artifact
@@ -103,11 +126,11 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: custom-kali-linux-iso
-          path: results/*.iso
+          path: /srv/chroot/kali/build/results/*.iso
 
       - name: Upload Build Log Artifact
         if: failure()
         uses: actions/upload-artifact@v3
         with:
           name: build-log
-          path: results/build.log
+          path: /srv/chroot/kali/build/results/build.log
