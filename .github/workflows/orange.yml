@@ -16,8 +16,10 @@ jobs:
       - name: Set up dependencies
         run: |
           sudo apt update
-          sudo apt install -y git aria2 python2.7 openjdk-8-jdk repo
-          sudo ln -s /usr/bin/python2.7 /usr/bin/python
+          sudo apt install -y git aria2 python2.7 openjdk-8-jdk repo ccache
+          if [ ! -L /usr/bin/python ]; then
+            sudo ln -s /usr/bin/python2.7 /usr/bin/python
+          fi
 
       - name: Clone OrangeFox Sync repository
         run: |
@@ -33,7 +35,7 @@ jobs:
           mkdir -p ~/android-source
           cd ~/android-source
           repo init -u https://android.googlesource.com/platform/manifest -b android-11.0.0_r1 --depth=1
-          repo sync --no-clone-bundle -j$(nproc)
+          repo sync --no-clone-bundle --current-branch -j$(nproc)
 
       - name: Clone RMX2185 Device Tree
         run: |
@@ -65,8 +67,8 @@ jobs:
       - name: Build OrangeFox
         run: |
           cd ~/android-source
-          lunch twrp_rmx2185-eng
-          mka recoveryimage
+          lunch twrp_rmx2185-eng || exit 1
+          mka recoveryimage || exit 1
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
