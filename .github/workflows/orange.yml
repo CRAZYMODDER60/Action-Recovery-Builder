@@ -23,12 +23,16 @@ jobs:
 
       - name: Clone OrangeFox Sync repository
         run: |
-          git clone https://gitlab.com/OrangeFox/sync.git ~/OrangeFox_sync
+          git clone https://gitlab.com/OrangeFox/Sync.git ~/OrangeFox_sync
+
+      - name: Verify OrangeFox Sync Script
+        run: |
+          ls ~/OrangeFox_sync
 
       - name: Sync OrangeFox sources
         run: |
-          cd ~/OrangeFox_sync/sync/
-          ./orangefox_sync.sh --branch 11.0 --path ~/fox_11.0
+          cd ~/OrangeFox_sync
+          ./orangefox_sync.sh --branch 11.0 --path ~/fox_11.0 || exit 1
 
       - name: Initialize Repo and Sync Android Source
         run: |
