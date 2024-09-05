@@ -1,29 +1,76 @@
-name: Serveo SSH Tunnel
+name: Build OrangeFox Recovery for RMX2185
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
-  serveo_ssh:
+  build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Install SSH Client
-        run: sudo apt update && sudo apt install -y openssh-client
+    # Step 1: Checkout the repository
+    - name: Checkout source
+      uses: actions/checkout@v3
 
-      - name: Install jq (JSON Processor)
-        run: sudo apt install -y jq
+    # Step 2: Set up the build environment (Install dependencies)
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y bc bison build-essential curl flex g++-multilib gcc-multilib git gnupg gperf imagemagick \
+          lib32ncurses5-dev lib32z1-dev liblz4-tool libncurses5-dev libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop \
+          pngcrush schedtool squashfs-tools xsltproc zip zlib1g-dev
 
-      - name: Start Serveo Tunnel
-        id: serveo
-        run: |
-          ssh -o StrictHostKeyChecking=no -R 80:localhost:22 serveo.net > serveo_url.txt &
-          sleep 10  # Allow time for Serveo to start and provide the URL
-          cat serveo_url.txt | grep -oP '(?<=url: ).*' > serveo_url_final.txt
+    # Step 3: Install repo tool
+    - name: Install repo tool
+      run: |
+        mkdir -p ~/bin
+        curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+        chmod a+x ~/bin/repo
+        export PATH=~/bin:$PATH
 
-      - name: Display Serveo URL
-        run: |
-          serveo_url=$(cat serveo_url_final.txt)
-          echo "Connect using SSH to: $serveo_url"
-          echo "::set-output name=url::$serveo_url"
-        env:
-          SERVEO_URL: ${{ steps.serveo.outputs.url }}
+    # Step 4: Initialize and sync AOSP sources
+    - name: Initialize and sync AOSP sources
+      run: |
+        repo init -u https://android.googlesource.com/platform/manifest -b android-11.0.0_r1
+        repo sync -j$(nproc) --force-sync
+
+    # Step 5: Clone OrangeFox and RMX2185-specific sources
+    - name: Clone OrangeFox sources
+      run: |
+        git clone https://gitlab.com/OrangeFox/Manifest.git -b fox_11.0 .repo/local_manifests
+        repo sync -j$(nproc) --force-sync
+
+    - name: Clone RMX2185 Device Tree
+      run: |
+        git clone https://github.com/realme-mediatek-dev/android_device_realme_RMX2185 device/realme/RMX2185
+
+    - name: Clone RMX2185 Kernel
+      run: |
+        git clone https://github.com/realme-mediatek-dev/android_kernel_realme_mt6765 kernel/realme/mt6765
+
+    - name: Clone RMX2185 Vendor Files
+      run: |
+        git clone https://github.com/realme-mediatek-dev/proprietary_vendor_realme_RMX2185 vendor/realme/RMX2185
+
+    # Step 6: Set up build environment variables
+    - name: Set up environment variables
+      run: |
+        export ALLOW_MISSING_DEPENDENCIES=true
+        export LC_ALL=C
+
+    # Step 7: Build OrangeFox Recovery
+    - name: Build OrangeFox Recovery
+      run: |
+        source build/envsetup.sh
+        lunch omni_RMX2185-eng
+        mka recoveryimage
+
+    # Step 8: Upload the recovery image
+    - name: Upload recovery image
+      uses: actions/upload-artifact@v3
+      with:
+        name: OrangeFox-recovery-RMX2185
+        path: out/target/product/RMX2185/recovery.img
