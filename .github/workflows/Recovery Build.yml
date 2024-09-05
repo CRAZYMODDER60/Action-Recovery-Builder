@@ -44,7 +44,7 @@ jobs:
     - name: Sync minimal AOSP sources
       run: |
         source ~/.bashrc
-        repo sync -j$(nproc) --force-sync --no-clone-bundle --optimized-fetch --partial-clone
+        repo sync -j$(nproc) --force-sync --no-clone-bundle --optimized-fetch
 
     # Step 5: Set up environment variables for build
     - name: Set up environment variables
