@@ -20,18 +20,23 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y bc bison build-essential curl flex g++-multilib gcc-multilib git gnupg gperf imagemagick \
           lib32ncurses5-dev lib32z1-dev liblz4-tool libncurses5-dev libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop \
-          pngcrush schedtool squashfs-tools xsltproc zip zlib1g-dev
+          pngcrush schedtool squashfs-tools xsltproc zip zlib1g-dev python3 python-is-python3
 
-    # Step 2: Install repo tool and configure PATH
-    - name: Install repo tool
+    # Step 2: Try installing repo from Google
+    - name: Install repo tool (Google method)
       run: |
         mkdir -p ~/bin
-        curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+        curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo || true
         chmod a+x ~/bin/repo
         echo 'export PATH=~/bin:$PATH' >> ~/.bashrc
         export PATH=~/bin:$PATH
 
-    # Step 3: Initialize and sync AOSP sources
+    # Step 3: Install repo from apt as a fallback
+    - name: Install repo tool (APT method fallback)
+      run: |
+        sudo apt-get install -y repo || true
+
+    # Step 4: Initialize and sync AOSP sources
     - name: Initialize and sync AOSP sources
       run: |
         source ~/.bashrc
