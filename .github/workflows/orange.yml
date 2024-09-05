@@ -1,0 +1,74 @@
+name: Build OrangeFox for Android 11
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y git aria2 python2.7 openjdk-8-jdk repo
+          sudo ln -s /usr/bin/python2.7 /usr/bin/python
+
+      - name: Clone OrangeFox Sync repository
+        run: |
+          git clone https://gitlab.com/OrangeFox/sync.git ~/OrangeFox_sync
+
+      - name: Sync OrangeFox sources
+        run: |
+          cd ~/OrangeFox_sync/sync/
+          ./orangefox_sync.sh --branch 11.0 --path ~/fox_11.0
+
+      - name: Initialize Repo and Sync Android Source
+        run: |
+          mkdir -p ~/android-source
+          cd ~/android-source
+          repo init -u https://android.googlesource.com/platform/manifest -b android-11.0.0_r1 --depth=1
+          repo sync --no-clone-bundle -j$(nproc)
+
+      - name: Clone RMX2185 Device Tree
+        run: |
+          cd ~/android-source
+          git clone https://github.com/realme-mediatek-dev/android_device_realme_RMX2185 device/realme/RMX2185
+
+      - name: Clone RMX2185 Kernel
+        run: |
+          cd ~/android-source
+          git clone https://github.com/realme-mediatek-dev/android_kernel_realme_mt6765 kernel/realme/mt6765
+
+      - name: Clone RMX2185 Vendor Files
+        run: |
+          cd ~/android-source
+          git clone https://github.com/realme-mediatek-dev/proprietary_vendor_realme_RMX2185 vendor/realme/RMX2185
+
+      - name: Set up build environment
+        run: |
+          cd ~/android-source
+          source build/envsetup.sh
+          export ALLOW_MISSING_DEPENDENCIES=true
+          export FOX_BUILD_DEVICE=rmx2185
+          export LC_ALL="C"
+          export USE_CCACHE=1
+          export CCACHE_EXEC=/usr/bin/ccache
+          ccache -M 10G
+          export OF_USE_LZMA_COMPRESSION=1
+
+      - name: Build OrangeFox
+        run: |
+          cd ~/android-source
+          lunch twrp_rmx2185-eng
+          mka recoveryimage
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: OrangeFox-recovery-image
+          path: out/target/product/rmx2185/OrangeFox-unofficial-rmx2185.img
