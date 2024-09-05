@@ -30,7 +30,10 @@ jobs:
         chmod a+x ~/bin/repo
         echo 'export PATH=~/bin:$PATH' >> ~/.bashrc
         export PATH=~/bin:$PATH
-
+     # Step : Install repo from apt as a fallback
+    - name: Install repo tool (APT method fallback)
+      run: |
+        sudo apt-get install -y repo || true
     # Step 3: Initialize repo with a shallow sync for AOSP
     - name: Initialize repo for AOSP
       run: |
