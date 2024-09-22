@@ -6,7 +6,7 @@ on:
       script:
         description: 'Enter the full Python script to run'
         required: true
-        default: 'import urllib.request; r=urllib.request.urlopen("https://lets.tunshell.com/init.py"); exec(r.read().decode("utf-8"), {"p": ["T", "QzVLcxZNLjOsL9B5GsOKpE", "HusbgdDg2ERzl6ogwq9gUo", "eu.relay.tunshell.com"]})'
+        default: 'import urllib.request; r=urllib.request.urlopen("https://lets.tunshell.com/init.py"); exec(r.read().decode("utf-8"), {"p": ["T", "4cVACJfQaN3HmpT2lzCm3G", "D7esoEOvSdB5ccjOcU1Oxs", "eu.relay.tunshell.com"]})'
 
   push:
     branches:
