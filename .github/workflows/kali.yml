@@ -31,8 +31,8 @@ jobs:
       # Step 4: Convert the old script (modify it to make it work)
       - name: Convert the old script to a working script
         run: |
-          # Assuming you want to make some changes in the script
-          sed 's/exec/running_exec/' old_script.py > new_script.py
+          # Example of updating the URL or correcting parts of the script
+          sed 's|https://example.com/init.py|https://new-url.com/init.py|' old_script.py > new_script.py
           cat new_script.py
 
       # Step 5: Run the converted script
