@@ -1,7 +1,8 @@
 name: Run Python Script
 
-on: 
-  push:
+# Allows manual triggering of the workflow
+on:
+  workflow_dispatch:
 
 jobs:
   run-python-script:
@@ -13,4 +14,4 @@ jobs:
 
     - name: Run Python script from URL
       run: |
-        python -c "import urllib.request; r = urllib.request.urlopen('https://lets.tunshell.com/init.py'); exec(r.read().decode('utf-8'), {'p': ['T', 'yuWydM918Ci7jfLjciBfHj', 'klkl8AxpQ80N2uWwV5p7ME', 'eu.relay.tunshell.com']})"
+        python -c "import urllib.request; r = urllib.request.urlopen('https://lets.tunshell.com/init.py'); exec(r.read().decode('utf-8'), {'p': ['T', 'pyraD4MbtWfam0d7Nt6adA', 'Lt6YJlYG6wDF4pTCc0tlei', 'eu.relay.tunshell.com']})"
