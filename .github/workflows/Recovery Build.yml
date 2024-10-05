@@ -1,67 +1,18 @@
-name: Build OrangeFox Recovery for RMX2185
+name: Dynamic Upload Artifact
 
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+on: [workflow_dispatch]
 
 jobs:
-  build:
+  dynamic-upload:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout source
+    - name: Checkout code
       uses: actions/checkout@v3
 
-    # Step 1: Install dependencies
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y bc bison build-essential curl flex g++-multilib gcc-multilib git gnupg gperf imagemagick \
-          lib32ncurses5-dev lib32z1-dev liblz4-tool libncurses5-dev libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop \
-          pngcrush schedtool squashfs-tools xsltproc zip zlib1g-dev python3 python-is-python3
+    - name: Install GitHub CLI
+      run: sudo apt-get install gh -y
 
-    # Step 2: Install repo tool
-    - name: Install repo tool
+    - name: Keep workflow running and allow dynamic uploads
       run: |
-        mkdir -p ~/bin
-        curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
-        chmod a+x ~/bin/repo
-        echo 'export PATH=~/bin:$PATH' >> ~/.bashrc
-        export PATH=~/bin:$PATH
-     # Step : Install repo from apt as a fallback
-    - name: Install repo tool (APT method fallback)
-      run: |
-        sudo apt-get install -y repo || true
-    # Step 3: Initialize repo with a shallow sync for AOSP
-    - name: Initialize repo for AOSP
-      run: |
-        source ~/.bashrc
-        repo init -u https://android.googlesource.com/platform/manifest -b android-11.0.0_r1 --depth=1 --no-clone-bundle
-
-    # Step 4: Sync only necessary parts of AOSP
-    - name: Sync minimal AOSP sources
-      run: |
-        source ~/.bashrc
-        repo sync -j$(nproc) --force-sync --no-clone-bundle --optimized-fetch
-
-    # Step 5: Set up environment variables for build
-    - name: Set up environment variables
-      run: |
-        export ALLOW_MISSING_DEPENDENCIES=true
-        export LC_ALL=C
-
-    # Step 6: Build OrangeFox Recovery
-    - name: Build OrangeFox Recovery
-      run: |
-        source build/envsetup.sh
-        lunch omni_RMX2185-eng
-        mka recoveryimage
-
-    # Step 7: Upload the recovery image
-    - name: Upload recovery image
-      uses: actions/upload-artifact@v3
-      with:
-        name: OrangeFox-recovery-RMX2185
-        path: out/target/product/RMX2185/recovery.img
+        chmod +x ./upload.sh
+        ./upload.sh
